@@ -150,3 +150,10 @@ EMAIL_HOST_USER = 'otpkjaef@gmail.com'
 EMAIL_HOST_PASSWORD = 'djkbolzvzmcyambl'
 
 AUTH_USER_MODEL = 'email_auth.CustomUser'
+
+GOOGLE_CLIENT_ID="258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com"
+GOOGLE_SECERET="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"
+
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Default, use database for session storage
+SESSION_COOKIE_SECURE = True

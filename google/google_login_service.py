@@ -36,7 +36,7 @@ class GoogleRawLoginFlowService:
 
         params = {
             "response_type": "code",
-            "client_id": "258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com",
+            "client_id": settings.GOOGLE_CLIENT_ID,
             "redirect_uri": redirect_uri,
             "scope": " ".join(self.SCOPES),
             "state": state,
@@ -51,8 +51,8 @@ class GoogleRawLoginFlowService:
         redirect_uri = self._get_redirect_uri()
         data = {
             "code": code,
-            "client_id": "258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com",
-            "client_secret": "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",
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_SECERET,
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code",
         }
@@ -77,5 +77,3 @@ class GoogleRawLoginFlowService:
 
 
 
-# "client_id": "258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com",
-# "client_secret": "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",
