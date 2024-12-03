@@ -40,6 +40,8 @@ INSTALLED_APPS = [
     'SunLocation',
     'rest_framework',
     'corsheaders',
+    'google',
+    'email_auth',
 ]
 
 MIDDLEWARE = [
@@ -128,3 +130,23 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+BASE_BACKEND_URL = "http://localhost:8000"
+
+SESSION_COOKIE_SAMESITE = None  # Allow cross-site requests for development
+SESSION_COOKIE_SECURE = False  # Use True in production with HTTPS
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'otpkjaef@gmail.com'
+EMAIL_HOST_PASSWORD = 'djkbolzvzmcyambl'
+
+AUTH_USER_MODEL = 'email_auth.CustomUser'
