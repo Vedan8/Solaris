@@ -41,11 +41,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'email_auth',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
-    'dj_rest_auth.registration',
     'rest_framework.authtoken',
 ]
 
@@ -58,7 +53,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware'
 ]
 
 ROOT_URLCONF = 'Solaris.urls'
@@ -161,14 +155,3 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'APP': {
-            'client_id': '258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com',
-            'secret': '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',
-            'key': ''
-        }
-    }
-}
-
-SITE_ID = 1 
