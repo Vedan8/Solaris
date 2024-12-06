@@ -40,8 +40,13 @@ INSTALLED_APPS = [
     'SunLocation',
     'rest_framework',
     'corsheaders',
-    'google',
     'email_auth',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'dj_rest_auth.registration',
+    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -53,6 +58,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware'
 ]
 
 ROOT_URLCONF = 'Solaris.urls'
@@ -132,9 +138,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 BASE_BACKEND_URL = "http://localhost:8000"
-
-SESSION_COOKIE_SAMESITE = None  # Allow cross-site requests for development
-SESSION_COOKIE_SECURE = False  # Use True in production with HTTPS
+# Use True in production with HTTPS
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -151,9 +155,20 @@ EMAIL_HOST_PASSWORD = 'djkbolzvzmcyambl'
 
 AUTH_USER_MODEL = 'email_auth.CustomUser'
 
-GOOGLE_CLIENT_ID="258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com"
-GOOGLE_SECERET="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"
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
 
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # Default, use database for session storage
-SESSION_COOKIE_SECURE = True
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': '258049850160-5pumst1tu4k1fstq96iqc52hpa1nds5h.apps.googleusercontent.com',
+            'secret': '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',
+            'key': ''
+        }
+    }
+}
+
+SITE_ID = 1 

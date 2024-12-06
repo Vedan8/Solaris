@@ -6,8 +6,12 @@ from datetime import datetime
 import pytz
 import numpy as np
 import pvlib
+import math
+from rest_framework.permissions import IsAuthenticated 
 
 class SolarPositionView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request, *args, **kwargs):
         # Ensure the request data is in JSON format and contains 'date' and 'time'
         try:
@@ -60,5 +64,109 @@ class SolarPositionView(APIView):
                 'datetime': custom_time
             }, status=status.HTTP_200_OK)
 
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class SolarPotentialView(APIView):
+    
+    permission_classes = [IsAuthenticated]
+
+    def calculate_theta(self, latitude, longitude, date_time):
+        """
+        Calculate the solar zenith angle (theta) based on latitude, longitude, and datetime.
+        """
+        # Convert latitude and longitude to radians
+        latitude_rad = math.radians(latitude)
+
+        # Parse date and time
+        date_time = datetime.fromisoformat(date_time)  # ISO 8601 format (e.g., "2024-12-06T12:00:00")
+        day_of_year = date_time.timetuple().tm_yday
+
+        # Calculate solar declination (δ)
+        declination = 23.45 * math.sin(math.radians((360 / 365) * (284 + day_of_year)))
+
+        # Convert to radians
+        declination_rad = math.radians(declination)
+
+        # Calculate time correction factor
+        standard_meridian = round(longitude / 15) * 15  # Nearest time zone meridian
+        time_correction = 4 * (longitude - standard_meridian)
+
+        # Calculate solar time
+        local_time = date_time.hour + date_time.minute / 60 + date_time.second / 3600
+        solar_time = local_time + time_correction / 60
+
+        # Calculate hour angle (H)
+        hour_angle = math.radians(15 * (solar_time - 12))
+
+        # Calculate solar zenith angle (θ)
+        cos_theta = (
+            math.sin(latitude_rad) * math.sin(declination_rad) +
+            math.cos(latitude_rad) * math.cos(declination_rad) * math.cos(hour_angle)
+        )
+
+        # Return θ (in radians) ensuring cos_theta is clamped between -1 and 1
+        return math.acos(max(-1, min(1, cos_theta)))
+
+    def post(self, request):
+        try:
+            # Extract input data
+            length = request.data.get('length')
+            breadth = request.data.get('breadth')
+            height = request.data.get('height')
+            latitude = request.data.get('latitude')
+            longitude = request.data.get('longitude')
+            date_time = request.data.get('date_time')  # ISO 8601 format
+            solar_irradiance = request.data.get('solar_irradiance')  # kWh/m²/day
+            efficiency_bipv = request.data.get('efficiency_bipv', 0.12)  # Default 12%
+            efficiency_rooftop = request.data.get('efficiency_rooftop', 0.18)  # Default 18%
+
+            # Validate input
+            if not all([length, breadth, height, latitude, longitude, date_time, solar_irradiance]):
+                return Response(
+                    {"error": "length, breadth, height, latitude, longitude, date_time, and solar_irradiance are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Convert inputs to floats
+            length = float(length)
+            breadth = float(breadth)
+            height = float(height)
+            latitude = float(latitude)
+            longitude = float(longitude)
+            solar_irradiance = float(solar_irradiance)
+            efficiency_bipv = float(efficiency_bipv)
+            efficiency_rooftop = float(efficiency_rooftop)
+
+            # Calculate θ for BIPV and rooftop
+            theta_bipv = self.calculate_theta(latitude, longitude, date_time)
+            theta_rooftop = self.calculate_theta(latitude, longitude, date_time)
+
+            # Calculate rooftop area and potential
+            rooftop_area = length * breadth
+            rooftop_potential = (
+                rooftop_area
+                * solar_irradiance
+                * efficiency_rooftop
+                * abs(math.cos(theta_rooftop))  # Use abs() to ensure positive potential
+            )
+
+            # Calculate BIPV area and potential (using one wall)
+            bipv_area = height * breadth
+            bipv_potential = (
+                bipv_area
+                * solar_irradiance
+                * efficiency_bipv
+                * abs(math.cos(theta_bipv))  # Use abs() to ensure positive potential
+            )
+
+            # Prepare response
+            result = {
+                "rooftop_potential_kwh": round(rooftop_potential, 2),
+                "bipv_potential_kwh": round(bipv_potential, 2)
+            }
+
+            return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

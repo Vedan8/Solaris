@@ -3,12 +3,12 @@ from rest_framework.response import Response
 from rest_framework import serializers, status
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth.hashers import make_password
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-import random
+from django.contrib.auth.hashers import make_password, check_password
 from .models import Subscriber
 from .serializers import SubscriberSerializer
+import random
 
 # Temporary in-memory storage for OTPs and user data
 otp_storage = {}
@@ -43,7 +43,7 @@ class SignupApi(APIView):
 
         otp = generate_otp()
         otp_storage[email] = {
-            "password": make_password(password),  # Hash the password
+            "password": password,  # Hash the password
             "otp": otp,
         }
 
@@ -79,11 +79,12 @@ class VerifyOtpApi(APIView):
             )
 
         # Create the user
-        User.objects.create_user(
-            username=email.split("@")[0],  # Use the part before @ as username
+        user = User(
+            username=email.split("@")[0],
             email=email,
-            password=otp_storage[email]['password'],  # Already hashed
         )
+        user.set_password(otp_storage[email]['password'])  # Set the hashed password
+        user.save()
         del otp_storage[email]
 
         return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
@@ -111,18 +112,16 @@ class LoginApi(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        # Debug: Print the entered password and the stored hashed password
+        # Debugging
+        print(f"Entered password: {password}")
+        print(f"Stored hashed password: {user.password}")
 
-        # Use check_password to verify the hashed password
-        if not user.check_password(password):
-            return Response(
-                {"error": "Invalid password."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        # Validate password
+        if not user.check_password(password):  # Internally calls `check_password`
+            return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
-
         return Response(
             {
                 "refresh": str(refresh),
@@ -131,19 +130,27 @@ class LoginApi(APIView):
             status=status.HTTP_200_OK,
         )
 
+
 class SubscriberView(APIView):
-    def post(self,request):
-        serializer=SubscriberSerializer(data=request.data)
+    """API to subscribe a user. Only accessible to authenticated users."""
+    
+    class InputSerializer(serializers.Serializer):
+        email = serializers.EmailField()
+
+    def post(self, request):
+        # Check if the user is authenticated
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "Authentication required."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        serializer = self.InputSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
         Subscriber.objects.create(email=email)
         return Response(
-            {
-                "User Suscribed"
-            },
+            {"message": "User subscribed successfully."},
             status=status.HTTP_200_OK,
         )
-
-
-
