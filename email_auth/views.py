@@ -112,10 +112,6 @@ class LoginApi(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        # Debugging
-        print(f"Entered password: {password}")
-        print(f"Stored hashed password: {user.password}")
-
         # Validate password
         if not user.check_password(password):  # Internally calls `check_password`
             return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
