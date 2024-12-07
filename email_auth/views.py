@@ -9,6 +9,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from .models import Subscriber
 from .serializers import SubscriberSerializer
 import random
+from .jwt_compat import jwt_exceptions
 
 # Temporary in-memory storage for OTPs and user data
 otp_storage = {}

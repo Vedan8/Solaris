@@ -157,12 +157,12 @@ SIMPLE_JWT = {
     # Add your other JWT settings here.
 }
 
-# import sys
-# import os
+import sys
+import os
 
-# # Add the project directory to the Python path
-# PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-# sys.path.insert(0, PROJECT_DIR)
+# Add the project directory to the Python path
+PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, PROJECT_DIR)
 
-# # Import the JWT compatibility module early
-# from jwt_compat import jwt_exceptions
+# Import the JWT compatibility module early
+from email_auth.jwt_compat import jwt_exceptions
