@@ -9,9 +9,10 @@ import pvlib
 import math
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers
+from django.http import FileResponse
 
 class SolarPositionView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     
     def post(self, request, *args, **kwargs):
         # Ensure the request data is in JSON format and contains 'date' and 'time'
@@ -71,7 +72,7 @@ class SolarPositionView(APIView):
 
 class SolarPotentialView(APIView):
     
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def calculate_theta(self, latitude, longitude, date_time):
         """
@@ -172,11 +173,21 @@ class SolarPotentialView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
 # class HeatMapView(APIView):
-#     def get(self,request):
-        
-#         class FileSerializer(serializers.Serializer):
-#             file=serializers.FileSerializer()
-#          return Response({
-#             "HeatMap":
-#          })
+#     def get(self, request, *args, **kwargs):
+#         # File paths
+#         obj_file_path = '/path/to/your/file.obj'
+#         mtl_file_path = '/path/to/your/file.mtl'
+
+#         # Ensure files exist
+#         if not os.path.exists(obj_file_path) or not os.path.exists(mtl_file_path):
+#             return Response({"detail": "One or both files not found."}, status=404)
+
+#         # Provide file URLs or direct file data
+#         files = {
+#             "obj_file": request.build_absolute_uri(f"/media/{os.path.basename(obj_file_path)}"),
+#             "mtl_file": request.build_absolute_uri(f"/media/{os.path.basename(mtl_file_path)}"),
+#         }
+
+#         return Response(files)
