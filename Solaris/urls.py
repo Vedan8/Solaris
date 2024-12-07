@@ -26,5 +26,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('SunLocation.urls')),
     path('api/', include('email_auth.urls')),
-    path('',,ActiveView.as_view())
+    path('',ActiveView.as_view())
 ]
