@@ -1,35 +1,28 @@
-import importlib
+import jwt
 
-def get_jwt_exceptions():
-    try:
-        # Try to import from the current jwt library
-        from jwt import exceptions
-        
-        # Create a base error class if PyJWTError doesn't exist
-        if not hasattr(exceptions, 'PyJWTError'):
-            class PyJWTError(Exception):
-                """Fallback base error for JWT exceptions."""
-                pass
-        
-        # Create InvalidKeyError if it doesn't exist
-        if not hasattr(exceptions, 'InvalidKeyError'):
-            class InvalidKeyError(Exception):
-                """Fallback for InvalidKeyError."""
-                pass
-        
-        return exceptions
-    except ImportError:
-        # Fallback class if import fails
-        class FallbackExceptions:
-            class PyJWTError(Exception):
-                """Fallback base error."""
-                pass
-            
-            class InvalidKeyError(PyJWTError):
-                """Fallback InvalidKeyError."""
-                pass
-        
-        return FallbackExceptions
+# Create explicit fallback exceptions
+class InvalidKeyError(Exception):
+    """Fallback InvalidKeyError."""
+    pass
 
-# Dynamically patch the exceptions
-jwt_exceptions = get_jwt_exceptions()
+class InvalidAlgorithmError(Exception):
+    """Fallback InvalidAlgorithmError."""
+    pass
+
+class InvalidTokenError(Exception):
+    """Fallback InvalidTokenError."""
+    pass
+
+# Attempt to import actual exceptions from jwt library
+try:
+    from jwt.exceptions import InvalidKeyError as JWTInvalidKeyError
+    from jwt.exceptions import InvalidAlgorithmError as JWTInvalidAlgorithmError
+    from jwt.exceptions import InvalidTokenError as JWTInvalidTokenError
+    
+    # Override fallback exceptions if library exceptions exist
+    InvalidKeyError = JWTInvalidKeyError
+    InvalidAlgorithmError = JWTInvalidAlgorithmError
+    InvalidTokenError = JWTInvalidTokenError
+except ImportError:
+    # Use fallback exceptions if import fails
+    pass
