@@ -5,18 +5,28 @@ def get_jwt_exceptions():
         # Try to import from the current jwt library
         from jwt import exceptions
         
-        # If InvalidKeyError doesn't exist, create a fallback
+        # Create a base error class if PyJWTError doesn't exist
+        if not hasattr(exceptions, 'PyJWTError'):
+            class PyJWTError(Exception):
+                """Fallback base error for JWT exceptions."""
+                pass
+        
+        # Create InvalidKeyError if it doesn't exist
         if not hasattr(exceptions, 'InvalidKeyError'):
-            class InvalidKeyError(exceptions.PyJWTError):
-                """Fallback for InvalidKeyError if not in current JWT version."""
+            class InvalidKeyError(Exception):
+                """Fallback for InvalidKeyError."""
                 pass
         
         return exceptions
     except ImportError:
-        # Fallback if jwt import fails
+        # Fallback class if import fails
         class FallbackExceptions:
-            class InvalidKeyError(Exception):
-                """Fallback InvalidKeyError if jwt import fails."""
+            class PyJWTError(Exception):
+                """Fallback base error."""
+                pass
+            
+            class InvalidKeyError(PyJWTError):
+                """Fallback InvalidKeyError."""
                 pass
         
         return FallbackExceptions
