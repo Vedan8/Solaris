@@ -16,15 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-from rest_framework import APIView
+# from rest_framework import APIView
 
-class ActiveView(APIView):
-    def get(self,request):
-        return Response("Active")
+# class ActiveView(APIView):
+#     def get(self,request):
+#         return Response("Active")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('SunLocation.urls')),
     path('api/', include('email_auth.urls')),
-    path('',ActiveView.as_view())
+    # path('',ActiveView.as_view())
 ]
