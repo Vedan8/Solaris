@@ -165,4 +165,3 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_DIR)
 
 # Import the JWT compatibility module early
-from email_auth.jwt_compat import jwt_exceptions
