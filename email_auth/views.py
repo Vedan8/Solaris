@@ -43,17 +43,23 @@ class SignupApi(APIView):
 
         otp = generate_otp()
         otp_storage[email] = {
-            "password": password,  # Hash the password
+            "password": password,
             "otp": otp,
         }
 
         # Send the OTP via email
-        send_mail(
-            subject="Your OTP Code",
-            message=f"Your OTP code is {otp}.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-        )
+        try:
+            send_mail(
+                subject="Your OTP Code",
+                message=f"Your OTP code is {otp}.",
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email],
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to send OTP: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response({"message": "OTP sent to your email."}, status=status.HTTP_200_OK)
 
@@ -79,13 +85,19 @@ class VerifyOtpApi(APIView):
             )
 
         # Create the user
-        user = User(
-            username=email.split("@")[0],
-            email=email,
-        )
-        user.set_password(otp_storage[email]['password'])  # Set the hashed password
-        user.save()
-        del otp_storage[email]
+        try:
+            user = User(
+                username=email.split("@")[0],
+                email=email,
+            )
+            user.set_password(otp_storage[email]['password'])
+            user.save()
+            del otp_storage[email]
+        except Exception as e:
+            return Response(
+                {"error": f"User registration failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
 
@@ -113,18 +125,24 @@ class LoginApi(APIView):
             )
 
         # Validate password
-        if not user.check_password(password):  # Internally calls `check_password`
+        if not user.check_password(password):
             return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-            },
-            status=status.HTTP_200_OK,
-        )
+        # Generate JWT tokens with additional error handling
+        try:
+            refresh = RefreshToken.for_user(user)
+            return Response(
+                {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Token generation failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class SubscriberView(APIView):
@@ -145,7 +163,15 @@ class SubscriberView(APIView):
         serializer.is_valid(raise_exception=True)
 
         email = serializer.validated_data['email']
-        Subscriber.objects.create(email=email)
+        
+        try:
+            Subscriber.objects.create(email=email)
+        except Exception as e:
+            return Response(
+                {"error": f"Subscription failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        
         return Response(
             {"message": "User subscribed successfully."},
             status=status.HTTP_200_OK,

@@ -7,7 +7,8 @@ import pytz
 import numpy as np
 import pvlib
 import math
-from rest_framework.permissions import IsAuthenticated 
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import serializers
 
 class SolarPositionView(APIView):
     permission_classes = [IsAuthenticated]
@@ -170,3 +171,12 @@ class SolarPotentialView(APIView):
             return Response(result, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# class HeatMapView(APIView):
+#     def get(self,request):
+        
+#         class FileSerializer(serializers.Serializer):
+#             file=serializers.FileSerializer()
+#          return Response({
+#             "HeatMap":
+#          })
