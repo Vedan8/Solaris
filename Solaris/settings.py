@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'email_auth',
-    'rest_framework.authtoken',
 ]
 
 MIDDLEWARE = [
@@ -149,11 +148,6 @@ EMAIL_HOST_USER = 'otpkjaef@gmail.com'
 EMAIL_HOST_PASSWORD = 'djkbolzvzmcyambl'
 
 AUTH_USER_MODEL = 'email_auth.CustomUser'
-
-
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-]
 
 SIMPLE_JWT = {
     # Remove 'TOKEN_BACKEND_CLASS' completely
