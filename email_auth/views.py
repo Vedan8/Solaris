@@ -9,7 +9,7 @@ from django.contrib.auth.hashers import make_password, check_password
 from .models import Subscriber
 from .serializers import SubscriberSerializer
 import random
-from .jwt_compat import jwt_exceptions
+from .jwt_compat import InvalidKeyError, InvalidAlgorithmError, InvalidTokenError
 
 # Temporary in-memory storage for OTPs and user data
 otp_storage = {}
@@ -117,6 +117,8 @@ class LoginApi(APIView):
         email = serializer.validated_data['email']
         password = serializer.validated_data['password']
 
+        User = get_user_model()
+
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
@@ -129,7 +131,7 @@ class LoginApi(APIView):
         if not user.check_password(password):
             return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Generate JWT tokens with additional error handling
+        # Generate JWT tokens with comprehensive error handling
         try:
             refresh = RefreshToken.for_user(user)
             return Response(
@@ -139,9 +141,14 @@ class LoginApi(APIView):
                 },
                 status=status.HTTP_200_OK,
             )
-        except Exception as e:
+        except (InvalidKeyError, InvalidAlgorithmError, InvalidTokenError) as e:
             return Response(
                 {"error": f"Token generation failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        except Exception as e:
+            return Response(
+                {"error": f"Unexpected error during token generation: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
