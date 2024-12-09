@@ -1,152 +1,124 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import serializers, status
+from rest_framework import status
 from django.core.mail import send_mail
-from django.conf import settings
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password, check_password
-from .models import Subscriber
-from .serializers import SubscriberSerializer
-import random
+from random import randint
+from django.utils.timezone import now
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.exceptions import AuthenticationFailed
 
-# Temporary in-memory storage for OTPs and user data
-otp_storage = {}
+from .models import CustomUser, TemporaryUser
+from .serializers import (
+    SignupSerializer, VerifyOTPSerializer,
+    ResendOTPSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
+)
 
-User = get_user_model()  # Use the custom user model
-
-
-def generate_otp():
-    """Generate a 6-digit random OTP."""
-    return random.randint(100000, 999999)
-
-
-class SignupApi(APIView):
-    """API for user signup with email and password."""
-    
-    class InputSerializer(serializers.Serializer):
-        email = serializers.EmailField()
-        password = serializers.CharField(write_only=True, min_length=8)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.InputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
-
-        if User.objects.filter(email=email).exists():
-            return Response(
-                {"error": "A user with this email already exists."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        otp = generate_otp()
-        otp_storage[email] = {
-            "password": password,  # Hash the password
-            "otp": otp,
-        }
-
-        # Send the OTP via email
-        send_mail(
-            subject="Your OTP Code",
-            message=f"Your OTP code is {otp}.",
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-        )
-
-        return Response({"message": "OTP sent to your email."}, status=status.HTTP_200_OK)
-
-
-class VerifyOtpApi(APIView):
-    """API to verify OTP and complete registration."""
-    
-    class InputSerializer(serializers.Serializer):
-        email = serializers.EmailField()
-        otp = serializers.IntegerField()
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.InputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = serializer.validated_data['email']
-        otp = serializer.validated_data['otp']
-
-        if email not in otp_storage or otp_storage[email]['otp'] != otp:
-            return Response(
-                {"error": "Invalid OTP or email."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Create the user
-        user = User(
-            username=email.split("@")[0],
-            email=email,
-        )
-        user.set_password(otp_storage[email]['password'])  # Set the hashed password
-        user.save()
-        del otp_storage[email]
-
-        return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
-
-
-class LoginApi(APIView):
-    """API for user login using email and password."""
-    
-    class InputSerializer(serializers.Serializer):
-        email = serializers.EmailField()
-        password = serializers.CharField(write_only=True)
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.InputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = serializer.validated_data['email']
-        password = serializer.validated_data['password']
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response(
-                {"error": "Invalid email"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        # Validate password
-        if not user.check_password(password):  # Internally calls `check_password`
-            return Response({"error": "Invalid password."}, status=status.HTTP_401_UNAUTHORIZED)
-
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        return Response(
-            {
-                "refresh": str(refresh),
-                "access": str(refresh.access_token),
-            },
-            status=status.HTTP_200_OK,
-        )
-
-
-class SubscriberView(APIView):
-    """API to subscribe a user. Only accessible to authenticated users."""
-    
-    class InputSerializer(serializers.Serializer):
-        email = serializers.EmailField()
-
+class SignupView(APIView):
     def post(self, request):
-        # Check if the user is authenticated
-        if not request.user.is_authenticated:
-            return Response(
-                {"error": "Authentication required."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        serializer = SignupSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'OTP sent to email'}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.InputSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+class VerifyOTPView(APIView):
+    def post(self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                temp_user = TemporaryUser.objects.get(email=serializer.validated_data['email'])
+                if temp_user.otp != serializer.validated_data['otp']:
+                    return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+                if temp_user.is_otp_expired():
+                    return Response({'error': 'OTP expired. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        email = serializer.validated_data['email']
-        Subscriber.objects.create(email=email)
-        return Response(
-            {"message": "User subscribed successfully."},
-            status=status.HTTP_200_OK,
-        )
+                # Create the permanent user
+                user = CustomUser.objects.create_user(
+                    email=temp_user.email,
+                    password=temp_user.password
+                )
+                temp_user.delete()  # Remove temporary user after success
+                return Response({'message': 'User verified and created successfully'}, status=status.HTTP_201_CREATED)
+            except TemporaryUser.DoesNotExist:
+                return Response({'error': 'Email not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResendOTPView(APIView):
+    def post(self, request):
+        serializer = ResendOTPSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                temp_user = TemporaryUser.objects.get(email=serializer.validated_data['email'])
+                temp_user.otp = str(randint(100000, 999999))
+                temp_user.otp_created_at = now()
+                temp_user.save()
+                send_mail(
+                    "Your New OTP Code",
+                    f"Your new OTP code is {temp_user.otp}",
+                    'from@example.com',
+                    [temp_user.email],
+                )
+                return Response({'message': 'New OTP sent to email'}, status=status.HTTP_200_OK)
+            except TemporaryUser.DoesNotExist:
+                return Response({'error': 'Email not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ForgotPasswordView(APIView):
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                user = CustomUser.objects.get(email=serializer.validated_data['email'])
+                otp = str(randint(100000, 999999))
+                TemporaryUser.objects.update_or_create(
+                    email=user.email,
+                    defaults={
+                        'password': user.password,
+                        'otp': otp,
+                        'otp_created_at': now(),
+                    },
+                )
+                send_mail(
+                    "Your Password Reset OTP",
+                    f"Your OTP code is {otp}",
+                    'from@example.com',
+                    [user.email],
+                )
+                return Response({'message': 'OTP sent to email'}, status=status.HTTP_200_OK)
+            except CustomUser.DoesNotExist:
+                return Response({'error': 'Email not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class ResetPasswordView(APIView):
+    def post(self, request):
+        serializer = ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                temp_user = TemporaryUser.objects.get(email=serializer.validated_data['email'])
+                if temp_user.otp != serializer.validated_data['otp']:
+                    return Response({'error': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+                if temp_user.is_otp_expired():
+                    return Response({'error': 'OTP expired. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                user = CustomUser.objects.get(email=temp_user.email)
+                user.set_password(serializer.validated_data['new_password'])
+                user.save()
+                temp_user.delete()  # Remove the temporary record after reset
+                return Response({'message': 'Password reset successfully'}, status=status.HTTP_200_OK)
+            except (TemporaryUser.DoesNotExist, CustomUser.DoesNotExist):
+                return Response({'error': 'Invalid email or OTP'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+
+        if not user.is_active:
+            raise AuthenticationFailed('Account is not verified. Please verify your email.')
+
+        return data
+
+class LoginView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer

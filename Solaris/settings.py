@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'email_auth',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -114,11 +115,15 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
 
-USE_I18N = True
 
+
+
+TIME_ZONE = 'Asia/Kolkata'
+
+# Ensure Django uses timezone-aware datetimes
 USE_TZ = True
+USE_I18N = True
 
 
 # Static files (CSS, JavaScript, Images)
@@ -149,11 +154,10 @@ EMAIL_HOST_PASSWORD = 'djkbolzvzmcyambl'
 
 AUTH_USER_MODEL = 'email_auth.CustomUser'
 
-SIMPLE_JWT = {
-    # Remove 'TOKEN_BACKEND_CLASS' completely
-    # Other configurations as needed:
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    # Add your other JWT settings here.
-}
 
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=20),  # Access token valid for 15 minutes
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=5),     # Refresh token valid for 7 days
+    'ROTATE_REFRESH_TOKENS': True,                  # Issue a new refresh token on refresh
+    'BLACKLIST_AFTER_ROTATION': True,               # Blacklist old refresh tokens after rotation
+}
