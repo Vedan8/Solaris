@@ -163,7 +163,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,                  # Issue a new refresh token on refresh
     'BLACKLIST_AFTER_ROTATION': True,               # Blacklist old refresh tokens after rotation
 }
-
+import os
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = 'https://solaris-1.onrender.com/media/'
