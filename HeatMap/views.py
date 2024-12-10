@@ -32,8 +32,8 @@ class Process3DModelView(APIView):
 
             return Response({
                 "message": "Files processed and replaced successfully.",
-                "obj_file_url": "https://res.cloudinary.com/dtfo1nvhr/raw/upload/v1733853730/updated_y0zmuj.obj",
-                "mtl_file_url": "https://res.cloudinary.com/dtfo1nvhr/raw/upload/v1733853519/updated_sbq9gm.mtl"
+                "obj_file_url": "https://drive.google.com/uc?export=download&id=1SOPQoyQcE_KEOK1neOj-kn-WLsLpC8br",
+                "mtl_file_url": "https://res.cloudinary.com/dtfo1nvhr/raw/upload/v1733855478/updated_vujgoe.mtl"
             }, status=201)
 
         except Exception as e:

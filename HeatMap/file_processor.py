@@ -50,28 +50,45 @@ def update_mtl_file(output_buffer, colors):
 
 
 def modify_obj_file(vertices, faces, potentials, ranges, obj_path, output_buffer, materials, mtl_file_name):
+    def is_horizontal_face(face_vertices):
+        # Check if the face is approximately horizontal by examining the normal vector
+        v1 = face_vertices[1] - face_vertices[0]
+        v2 = face_vertices[2] - face_vertices[0]
+        normal = np.cross(v1, v2)
+        return abs(normal[1]) > abs(normal[0]) and abs(normal[1]) > abs(normal[2])  # Y-axis dominance indicates horizontal
+
     with open(obj_path, 'r') as infile:
         output_buffer.write(f"mtllib {mtl_file_name}\n")  # Reference the material file
         face_index = 0
         unique_edges = set()  # Store unique edges for black borders
+
         for line in infile:
             if line.startswith('f '):  # Handle face definitions
-                potential = potentials[face_index]
-                material_index = np.digitize(potential, ranges, right=True)
-                output_buffer.write(f"usemtl {materials[material_index]}\n")  # Assign material based on potential
-                # Parse vertices of the face
-                vertices = [item.split('/')[0] for item in line.split()[1:]]
-                # Create edges and store in the set to avoid duplicates
-                for i in range(len(vertices)):
-                    edge = tuple(sorted([vertices[i], vertices[(i + 1) % len(vertices)]]))
+                face_indices = [int(item.split('/')[0]) - 1 for item in line.split()[1:]]
+                face_vertices = vertices[face_indices]
+
+                if is_horizontal_face(face_vertices):  # Check if the face is horizontal
+                    potential = potentials[face_index]
+                    material_index = np.digitize(potential, ranges, right=True)
+                    output_buffer.write(f"usemtl {materials[material_index]}\n")  # Apply colored material
+                else:
+                    output_buffer.write("usemtl gray\n")  # Apply default gray material for sides
+
+                # Store edges of the current face for borders
+                for i in range(len(face_indices)):
+                    edge = tuple(sorted([face_indices[i], face_indices[(i + 1) % len(face_indices)]]))
                     unique_edges.add(edge)
+
                 face_index += 1
+
             output_buffer.write(line)
+
         # Add edges with black borders
         output_buffer.write("\n# Adding edges with black borders\n")
         output_buffer.write("usemtl black_border\n")
         for edge in unique_edges:
-            output_buffer.write(f"l {edge[0]} {edge[1]}\n")  # Add lines representing edges
+            output_buffer.write(f"l {edge[0] + 1} {edge[1] + 1}\n")  # Add lines representing edges
+
 
 
 
