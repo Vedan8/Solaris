@@ -1,0 +1,32 @@
+newmtl color_0
+Kd 1.00 0.84 0.00
+newmtl color_1
+Kd 1.00 0.65 0.00
+newmtl color_2
+Kd 1.00 0.55 0.00
+newmtl color_3
+Kd 1.00 0.39 0.28
+newmtl color_4
+Kd 1.00 0.27 0.00
+newmtl color_5
+Kd 1.00 0.00 0.00
+newmtl color_6
+Kd 0.89 0.26 0.20
+newmtl color_7
+Kd 0.80 0.36 0.36
+newmtl color_8
+Kd 0.86 0.08 0.24
+newmtl color_9
+Kd 0.70 0.13 0.13
+newmtl color_10
+Kd 0.55 0.00 0.00
+newmtl color_11
+Kd 0.65 0.16 0.16
+newmtl color_12
+Kd 0.50 0.00 0.00
+newmtl color_13
+Kd 0.40 0.00 0.00
+newmtl color_14
+Kd 0.29 0.00 0.00
+newmtl black_border
+Kd 0.0 0.0 0.0
