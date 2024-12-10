@@ -12,8 +12,8 @@ class Process3DModelView(APIView):
     def post(self, request):
         try:
             # Parse inputs
-            solar_irradiance = float(request.POST.get('solar_irradiance'))
-            datetime_str = request.POST.get('datetime')
+            solar_irradiance = float(request.data.get('solar_irradiance'))
+            datetime_str = request.data.get('datetime')
             timestamp = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
 
             # Process the 3D model to generate updated OBJ and MTL contents
