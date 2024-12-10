@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'email_auth',
     'rest_framework_simplejwt',
     'HeatMap',
+    'Features',
 ]
 
 MIDDLEWARE = [

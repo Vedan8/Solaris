@@ -47,7 +47,7 @@ class SolarPositionView(APIView):
             azimuth = solar_position['azimuth'].values[0]
 
             # Assuming a distance of 100 units from the city to the Sun
-            r = 100
+            r = 10000
 
             # Convert altitude (degrees) and azimuth (degrees) to radians
             altitude_rad = np.radians(altitude)
@@ -152,7 +152,7 @@ class SolarPotentialView(APIView):
                 * solar_irradiance
                 * efficiency_rooftop
                 * abs(math.cos(theta_rooftop))  # Use abs() to ensure positive potential
-            )
+            )/10
 
             # Calculate BIPV area and potential (using one wall)
             bipv_area = height * breadth
@@ -161,7 +161,7 @@ class SolarPotentialView(APIView):
                 * solar_irradiance
                 * efficiency_bipv
                 * abs(math.cos(theta_bipv))  # Use abs() to ensure positive potential
-            )
+            )/10
 
             # Prepare response
             result = {
