@@ -8,6 +8,8 @@ import pytz
 from django.conf import settings
 from datetime import datetime
 from datetime import datetime
+import io
+from django.core.files.base import ContentFile
 
 def parse_obj_file(file_path):
     vertices = []
@@ -39,37 +41,44 @@ def calculate_cos_theta(latitude, longitude, time):
     )
     return max(0, cos_theta)
 
-def update_mtl_file(output_path, colors):
-    with open(output_path, 'w') as file:
-        for i, color in enumerate(colors):
-            r, g, b = [int(color[i:i+2], 16) / 255.0 for i in (1, 3, 5)]
-            file.write(f"newmtl color_{i}\nKd {r:.2f} {g:.2f} {b:.2f}\n")
-        file.write("newmtl black_border\nKd 0.0 0.0 0.0\n")
+def update_mtl_file(output_buffer, colors):
+    for i, color in enumerate(colors):
+        r, g, b = [int(color[i:i+2], 16) / 255.0 for i in (1, 3, 5)]
+        output_buffer.write(f"newmtl color_{i}\nKd {r:.2f} {g:.2f} {b:.2f}\n")
+    output_buffer.write("newmtl black_border\nKd 0.0 0.0 0.0\n")  # Black border material
     return [f"color_{i}" for i in range(len(colors))] + ["black_border"]
 
-def modify_obj_file(vertices, faces, potentials, ranges, obj_path, output_path, materials, mtl_file_name):
-    with open(obj_path, 'r') as infile, open(output_path, 'w') as outfile:
-        outfile.write(f"mtllib {mtl_file_name}\n")
+
+def modify_obj_file(vertices, faces, potentials, ranges, obj_path, output_buffer, materials, mtl_file_name):
+    with open(obj_path, 'r') as infile:
+        output_buffer.write(f"mtllib {mtl_file_name}\n")  # Reference the material file
         face_index = 0
+        unique_edges = set()  # Store unique edges for black borders
         for line in infile:
-            if line.startswith('f '):
+            if line.startswith('f '):  # Handle face definitions
                 potential = potentials[face_index]
                 material_index = np.digitize(potential, ranges, right=True)
-                outfile.write(f"usemtl {materials[material_index]}\n")
+                output_buffer.write(f"usemtl {materials[material_index]}\n")  # Assign material based on potential
+                # Parse vertices of the face
+                vertices = [item.split('/')[0] for item in line.split()[1:]]
+                # Create edges and store in the set to avoid duplicates
+                for i in range(len(vertices)):
+                    edge = tuple(sorted([vertices[i], vertices[(i + 1) % len(vertices)]]))
+                    unique_edges.add(edge)
                 face_index += 1
-            outfile.write(line)
-        for face in faces:
-            for i in range(len(face)):
-                v1, v2 = face[i], face[(i + 1) % len(face)]
-                outfile.write("usemtl black_border\n")
-                outfile.write(f"f {v1 + 1} {v2 + 1} {v2 + 1}\n")
+            output_buffer.write(line)
+        # Add edges with black borders
+        output_buffer.write("\n# Adding edges with black borders\n")
+        output_buffer.write("usemtl black_border\n")
+        for edge in unique_edges:
+            output_buffer.write(f"l {edge[0]} {edge[1]}\n")  # Add lines representing edges
+
+
+
 
 def process_3d_model(solar_irradiance, timestamp):
     # Define file paths
     obj_path = os.path.join(settings.MEDIA_ROOT, "model.obj")
-    mtl_path = os.path.join(settings.MEDIA_ROOT, "model.mtl")
-    updated_obj_path = os.path.join(settings.MEDIA_ROOT, "updated.obj")
-    updated_mtl_path = os.path.join(settings.MEDIA_ROOT, "updated.mtl")
 
     # Constants
     latitude = 23.030357
@@ -90,7 +99,20 @@ def process_3d_model(solar_irradiance, timestamp):
     potentials = [a * solar_irradiance * efficiency * cos_theta for a in areas]
     min_potential, max_potential = min(potentials), max(potentials)
     ranges = np.linspace(min_potential, max_potential, 16)[1:]
-    materials = update_mtl_file(updated_mtl_path, colors)
-    modify_obj_file(vertices, faces, potentials, ranges, obj_path, updated_obj_path, materials, "updated.mtl")
 
-    return updated_obj_path, updated_mtl_path
+    # In-memory file creation
+    obj_buffer = io.StringIO()
+    mtl_buffer = io.StringIO()
+
+    # Write updated MTL contents
+    materials = update_mtl_file(mtl_buffer, colors)
+
+    # Write updated OBJ contents
+    modify_obj_file(vertices, faces, potentials, ranges, obj_path, obj_buffer, materials, "updated.mtl")
+
+    # Convert in-memory content to ContentFile
+    obj_file = ContentFile(obj_buffer.getvalue().encode(), name="updated.obj")
+    mtl_file = ContentFile(mtl_buffer.getvalue().encode(), name="updated.mtl")
+
+    return obj_file, mtl_file
+
