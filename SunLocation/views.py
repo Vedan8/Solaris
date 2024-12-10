@@ -47,7 +47,7 @@ class SolarPositionView(APIView):
             azimuth = solar_position['azimuth'].values[0]
 
             # Assuming a distance of 100 units from the city to the Sun
-            r = 10000
+            r = 300
 
             # Convert altitude (degrees) and azimuth (degrees) to radians
             altitude_rad = np.radians(altitude)
