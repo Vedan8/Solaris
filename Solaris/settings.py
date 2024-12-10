@@ -166,4 +166,4 @@ SIMPLE_JWT = {
 
 
 MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_URL = '/media/'
+MEDIA_URL = 'https://solaris-1.onrender.com/media/'
