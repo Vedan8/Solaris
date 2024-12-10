@@ -12,7 +12,7 @@ from rest_framework import serializers
 from django.http import FileResponse
 
 class SolarPositionView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
     
     def post(self, request, *args, **kwargs):
         # Ensure the request data is in JSON format and contains 'date' and 'time'
