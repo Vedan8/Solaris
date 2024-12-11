@@ -199,8 +199,8 @@ class SolarPotentialEachFaceView(APIView):
         # Manually defined exposure percentages for each face
         east_exposure = [1, 1, 1, 0.8, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
         west_exposure = list(reversed(east_exposure))
-        south_exposure = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
-        north_exposure = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0]
+        south_exposure = [0, 0, 0, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
+        north_exposure = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0, 0, 0]
 
         exposures = [east_exposure, south_exposure, west_exposure, north_exposure]
 
@@ -221,7 +221,35 @@ class SolarPotentialEachFaceView(APIView):
             for face, potentials in hourly_potential.items()
         }
 
-        return hourly_potential, average_potential
+        # Calculate period of non-zero potential for each face in 12-hour format
+        def convert_to_12_hour(hour):
+            if hour == 0:
+                return "12 AM"
+            elif hour < 12:
+                return f"{hour} AM"
+            elif hour == 12:
+                return "12 PM"
+            else:
+                return f"{hour - 12} PM"
+
+        def consolidate_periods(potentials):
+            periods = []
+            start = None
+            for i, p in enumerate(potentials):
+                if p > 0 and start is None:
+                    start = i
+                elif p == 0 and start is not None:
+                    periods.append({"start": convert_to_12_hour(6 + start), "end": convert_to_12_hour(6 + i - 1)})
+                    start = None
+            if start is not None:
+                periods.append({"start": convert_to_12_hour(6 + start), "end": convert_to_12_hour(6 + len(potentials) - 1)})
+            return periods
+
+        non_zero_periods = {
+            face: consolidate_periods(potentials) for face, potentials in hourly_potential.items()
+        }
+
+        return hourly_potential, average_potential, non_zero_periods
 
     def post(self, request):
         try:
@@ -250,13 +278,14 @@ class SolarPotentialEachFaceView(APIView):
 
             areas = [height * length, height * breadth, height * length, height * breadth]
 
-            hourly_potential, average_potential = self.calculate_hourly_potential(
+            hourly_potential, average_potential, non_zero_periods = self.calculate_hourly_potential(
                 latitude, longitude, date, solar_irradiance, efficiency_bipv, areas
             )
 
             response_data = {
                 "hourly_potential": hourly_potential,
-                "average_potential": average_potential
+                "average_potential": average_potential,
+                "non_zero_periods": non_zero_periods
             }
 
             return Response(response_data, status=status.HTTP_200_OK)
