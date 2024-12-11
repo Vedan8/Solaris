@@ -126,7 +126,7 @@ class SolarPotentialView(APIView):
             # Calculate potential for the hour
             potential = (
                 area * solar_irradiance * efficiency * abs(math.cos(theta))
-            ) / 10
+            )
             hourly_potential.append(round(potential, 2))
         
         return hourly_potential
@@ -188,115 +188,40 @@ class SolarPotentialView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
-import math
-from datetime import datetime
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-
 class SolarPotentialEachFaceView(APIView):
-
-    def calculate_theta(self, latitude, longitude, date_time):
-        """
-        Calculate the solar zenith angle (theta) based on latitude, longitude, and datetime.
-        """
-        latitude_rad = math.radians(latitude)
-        date_time = datetime.fromisoformat(date_time)  # ISO 8601 format (e.g., "2024-12-06T12:00:00")
-        day_of_year = date_time.timetuple().tm_yday
-
-        declination = 23.45 * math.sin(math.radians((360 / 365) * (284 + day_of_year)))
-        declination_rad = math.radians(declination)
-
-        standard_meridian = round(longitude / 15) * 15  # Nearest time zone meridian
-        time_correction = 4 * (longitude - standard_meridian)
-
-        local_time = date_time.hour + date_time.minute / 60 + date_time.second / 3600
-        solar_time = local_time + time_correction / 60
-
-        hour_angle = math.radians(15 * (solar_time - 12))
-
-        cos_theta = (
-            math.sin(latitude_rad) * math.sin(declination_rad) +
-            math.cos(latitude_rad) * math.cos(declination_rad) * math.cos(hour_angle)
-        )
-
-        return math.acos(max(-1, min(1, cos_theta)))
-
-    def calculate_sun_position(self, latitude, longitude, date_time):
-        """
-        Calculate the sun's azimuth angle to determine which face is exposed to sunlight.
-        """
-        latitude_rad = math.radians(latitude)
-        date_time = datetime.fromisoformat(date_time)
-        day_of_year = date_time.timetuple().tm_yday
-
-        declination = 23.45 * math.sin(math.radians((360 / 365) * (284 + day_of_year)))
-        declination_rad = math.radians(declination)
-
-        standard_meridian = round(longitude / 15) * 15
-        time_correction = 4 * (longitude - standard_meridian)
-
-        local_time = date_time.hour + date_time.minute / 60 + date_time.second / 3600
-        solar_time = local_time + time_correction / 60
-
-        hour_angle = math.radians(15 * (solar_time - 12))
-
-        cos_theta = (
-            math.sin(latitude_rad) * math.sin(declination_rad) +
-            math.cos(latitude_rad) * math.cos(declination_rad) * math.cos(hour_angle)
-        )
-        zenith_angle = math.acos(max(-1, min(1, cos_theta)))
-
-        sin_azimuth = math.cos(declination_rad) * math.sin(hour_angle) / math.sin(zenith_angle)
-        cos_azimuth = (
-            (math.sin(zenith_angle) * math.sin(latitude_rad) - math.sin(declination_rad)) /
-            (math.cos(zenith_angle) * math.cos(latitude_rad))
-        )
-
-        azimuth = math.atan2(sin_azimuth, cos_azimuth)
-        return math.degrees(azimuth) % 360
-
-    def calculate_exposure_percentages(self, azimuth):
-        """
-        Calculate the exposure percentages for each face based on the sun's azimuth angle.
-        """
-        if 0 <= azimuth < 90:  # Northeast
-            east_percentage = (90 - azimuth) / 90
-            north_percentage = azimuth / 90
-            return [north_percentage, 0, 0, east_percentage]
-        elif 90 <= azimuth < 180:  # Southeast
-            east_percentage = (180 - azimuth) / 90
-            south_percentage = (azimuth - 90) / 90
-            return [0, south_percentage, 0, east_percentage]
-        elif 180 <= azimuth < 270:  # Southwest
-            west_percentage = (270 - azimuth) / 90
-            south_percentage = (azimuth - 180) / 90
-            return [0, south_percentage, west_percentage, 0]
-        else:  # Northwest
-            west_percentage = (360 - azimuth) / 90
-            north_percentage = (azimuth - 270) / 90
-            return [north_percentage, 0, west_percentage, 0]
 
     def calculate_hourly_potential(self, latitude, longitude, date, solar_irradiance, efficiency, areas):
         """
-        Calculate hourly solar potential for each face based on the sun's position.
+        Calculate hourly solar potential for each face based on manually defined exposure percentages.
         """
         hourly_potential = {"face1": [], "face2": [], "face3": [], "face4": []}
-        
-        for hour in range(6, 19):  # 6 AM to 6 PM (18:00)
-            date_time = datetime.fromisoformat(date).replace(hour=hour, minute=0, second=0)
 
-            azimuth = self.calculate_sun_position(latitude, longitude, date_time.isoformat())
-            exposure_percentages = self.calculate_exposure_percentages(azimuth)
+        # Manually defined exposure percentages for each face
+        east_exposure = [1, 1, 1, 0.8, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
+        west_exposure = list(reversed(east_exposure))
+        south_exposure = [0.5, 0.6, 0.7, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
+        north_exposure = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.05, 0]
+
+        exposures = [east_exposure, south_exposure, west_exposure, north_exposure]
+
+        for hour in range(6, 19):  # 6 AM to 6 PM
+            hour_index = hour - 6
 
             for i, face in enumerate(["face1", "face2", "face3", "face4"]):
-                potential = (
-                    areas[i] * solar_irradiance * efficiency * exposure_percentages[i]
-                ) / 10
-                hourly_potential[face].append(round(potential, 2))
+                potential_at_hour = areas[i] * solar_irradiance * efficiency / 1000
+                adjusted_potential = potential_at_hour * exposures[i][hour_index]
+                hourly_potential[face].append(round(adjusted_potential, 2))
 
-        return hourly_potential
+            # Debug logs for hourly potential
+            print(f"Hourly Potential (Hour {hour}): {hourly_potential}")
+
+        # Calculate average potential for each face
+        average_potential = {
+            face: round(sum(potentials) / len(potentials), 2) if potentials else 0
+            for face, potentials in hourly_potential.items()
+        }
+
+        return hourly_potential, average_potential
 
     def post(self, request):
         try:
@@ -325,10 +250,15 @@ class SolarPotentialEachFaceView(APIView):
 
             areas = [height * length, height * breadth, height * length, height * breadth]
 
-            hourly_potential = self.calculate_hourly_potential(
+            hourly_potential, average_potential = self.calculate_hourly_potential(
                 latitude, longitude, date, solar_irradiance, efficiency_bipv, areas
             )
 
-            return Response(hourly_potential, status=status.HTTP_200_OK)
+            response_data = {
+                "hourly_potential": hourly_potential,
+                "average_potential": average_potential
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
