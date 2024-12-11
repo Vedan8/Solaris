@@ -93,6 +93,24 @@ def modify_obj_file(vertices, faces, potentials, ranges, obj_path, output_buffer
 
 
 
+def calculate_dimensions(vertices, faces):
+    widths = []
+    lengths = []
+
+    for face in faces:
+        face_vertices = vertices[face]
+        x_coords = face_vertices[:, 0]
+        z_coords = face_vertices[:, 2]
+        width = x_coords.max() - x_coords.min()
+        length = z_coords.max() - z_coords.min()
+        if width > 0 and length > 0:  # Filter out degenerate cases
+            widths.append(width)
+            lengths.append(length)
+
+    average_width = np.mean(widths) if widths else 0
+    average_length = np.mean(lengths) if lengths else 0
+    return average_width, average_length
+
 def process_3d_model(solar_irradiance, timestamp):
     # Define file paths
     obj_path = os.path.join(settings.MEDIA_ROOT, "model.obj")
@@ -109,6 +127,12 @@ def process_3d_model(solar_irradiance, timestamp):
 
     # Main logic
     vertices, faces = parse_obj_file(obj_path)
+    
+    # Calculate dimensions
+    avg_width, avg_length = calculate_dimensions(vertices, faces)
+    print(f"Average Width: {avg_width}")
+    print(f"Average Length: {avg_length}")
+    
     areas = [calculate_polygon_area(vertices[face]) for face in faces]
     average_area = np.mean([a for a in areas if a > 0])
     areas = [a if a > 0 else average_area for a in areas]
@@ -132,4 +156,3 @@ def process_3d_model(solar_irradiance, timestamp):
     mtl_file = ContentFile(mtl_buffer.getvalue().encode(), name="updated.mtl")
 
     return obj_file, mtl_file
-

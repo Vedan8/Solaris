@@ -27,4 +27,5 @@ urlpatterns = [
     path('api/',include('SunLocation.urls')),
     path('api/', include('email_auth.urls')),
     path('', include('HeatMap.urls')),
+    path('api/', include('MlModels.urls')),
 ]

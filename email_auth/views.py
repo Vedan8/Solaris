@@ -11,8 +11,9 @@ from rest_framework.exceptions import AuthenticationFailed
 from .models import CustomUser, TemporaryUser
 from .serializers import (
     SignupSerializer, VerifyOTPSerializer,
-    ResendOTPSerializer, ForgotPasswordSerializer, ResetPasswordSerializer
+    ResendOTPSerializer, ForgotPasswordSerializer, ResetPasswordSerializer,UserTypeSerializer
 )
+from rest_framework.permissions import IsAuthenticated
 
 class SignupView(APIView):
     def post(self, request):
@@ -122,3 +123,21 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class LoginView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class UpdateUserTypeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        # Get the user from the authenticated access token
+        user = request.user
+        # Get the new usertype from the request data
+        if request.data is None:
+            return Response({"error":"usertype not provided"})
+        serializer = UserTypeSerializer(user, data=request.data, partial=True)
+        
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"message": "User type updated successfully"}, status=status.HTTP_200_OK)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
