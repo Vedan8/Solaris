@@ -349,8 +349,8 @@ class FaceColorView(APIView):
                 # Calculate distance from the red point
                 distance_from_red = max(abs(row - 0), abs(col - red_col))
 
-                # Calculate hue based on distance from red, with a smoother gradient
-                hue = distance_from_red / max(num_rows, num_cols) * 0.2 + 0.05  # Adjust hue range
+                # Calculate hue based on distance from red, with a distinct transition
+                hue = distance_from_red / max(num_rows, num_cols) * 0.2
 
                 # Calculate RGB values based on hue and intensity
                 red, green, blue = colorsys.hsv_to_rgb(hue, 1, 1)  # Full saturation and value for brighter colors
