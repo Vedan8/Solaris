@@ -301,11 +301,7 @@ from rest_framework import status
 import random
 import colorsys
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import random
-import colorsys
+
 
 class FaceColorView(APIView):
     color_patterns = {}  # Map to store color patterns for dimensions
@@ -336,8 +332,6 @@ class FaceColorView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     def generate_face_colors(self, face_area, num_rows, num_cols):
-        num_rows=20
-        num_cols=20
         # Check if a pattern exists for these dimensions
         key = f"{face_area}_{num_rows}_{num_cols}"
         if key in self.color_patterns:
@@ -345,11 +339,19 @@ class FaceColorView(APIView):
 
         # Generate a new color pattern
         colors = []
+
+        # Randomly select a red point on the first row
+        red_col = random.randint(0, num_cols - 1)
+
         for row in range(num_rows):
             row_colors = []
             for col in range(num_cols):
-                # Adjust hue for the first 6 rows to be pure red
-                hue = 0 if row < 6 else 0.08 + (row - 6) * 0.09 / (num_rows - 6)
+                # Calculate distance from the red point
+                distance_from_red = max(abs(row - 0), abs(col - red_col))
+
+                # Calculate hue based on distance from red, ensuring yellow at the edges
+                max_distance = max(num_rows, num_cols)
+                hue = min(distance_from_red / max_distance, 0.1)
 
                 # Calculate RGB values based on hue and intensity
                 red, green, blue = colorsys.hsv_to_rgb(hue, 1, 1)  # Full saturation and value for brighter colors
