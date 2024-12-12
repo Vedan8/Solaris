@@ -11,6 +11,7 @@ from rest_framework import serializers
 from django.http import FileResponse
 from datetime import datetime, timedelta
 import random
+import colorsys
 
 class SolarPositionView(APIView):
     # permission_classes = [IsAuthenticated]
@@ -294,6 +295,12 @@ class SolarPotentialEachFaceView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import random
+import colorsys
+
 class FaceColorView(APIView):
     color_patterns = {}  # Map to store color patterns for dimensions
 
@@ -324,6 +331,8 @@ class FaceColorView(APIView):
 
     def generate_face_colors(self, face_area, num_rows, num_cols):
         # Check if a pattern exists for these dimensions
+        num_rows = 20
+        num_cols = 20
         key = f"{face_area}_{num_rows}_{num_cols}"
         if key in self.color_patterns:
             return self.color_patterns[key]
@@ -342,7 +351,13 @@ class FaceColorView(APIView):
                 green = int(255 * (1 - intensity))
                 blue = 0  # Keep blue constant for a red-to-yellow gradient
 
-                row_colors.append((red, green, blue))
+                # Convert RGB to HSV (intermediate step)
+                hsv_color = colorsys.rgb_to_hsv(red/255, green/255, blue/255)
+
+                # Convert HSV to hex
+                hex_color = '#{:02x}{:02x}{:02x}'.format(int(hsv_color[0] * 255), int(hsv_color[1] * 255), int(hsv_color[2] * 255))
+
+                row_colors.append(hex_color)
             colors.append(row_colors)
 
         # Store the generated pattern in the map
