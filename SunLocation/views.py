@@ -10,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import serializers
 from django.http import FileResponse
 from datetime import datetime, timedelta
+import random
 
 class SolarPositionView(APIView):
     # permission_classes = [IsAuthenticated]
@@ -293,44 +294,23 @@ class SolarPotentialEachFaceView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
 class FaceColorView(APIView):
+    color_patterns = {}  # Map to store color patterns for dimensions
+
     def post(self, request):
-        # Retrieve data from the request, even if not all is needed
-        length = float(request.data.get('length')) if request.data.get('length') else None
-        breadth = float(request.data.get('breadth')) if request.data.get('breadth') else None
-        height = float(request.data.get('height')) if request.data.get('height') else None
-        latitude = request.data.get('latitude')
-        longitude = request.data.get('longitude')
-        date = request.data.get('date')
-        solar_irradiance = request.data.get('solar_irradiance')
-        efficiency_bipv = request.data.get('efficiency_bipv', 0.12)
+        # Retrieve data from the request
+        length = float(request.data.get('length'))
+        breadth = float(request.data.get('breadth'))
+        height = float(request.data.get('height'))
 
         # Calculate face areas
         areas = [height * length, height * breadth, height * length, height * breadth]
 
-        def generate_face_colors(face_area, num_rows, num_cols):
-            colors = []
-            for row in range(num_rows):
-                row_colors = []
-                for col in range(num_cols):
-                    # Calculate color intensity based on row number
-                    intensity = 1 - (row / (num_rows - 6))
-
-                    # Calculate RGB values based on intensity
-                    red = int(255 * intensity)
-                    green = int(255 * (1 - intensity))
-                    blue = 0  # Keep blue constant for a red-to-yellow gradient
-
-                    row_colors.append((red, green, blue))
-                colors.append(row_colors)
-            return colors
-
-        # Divide faces into grids and generate color arrays
-        face1_colors = generate_face_colors(areas[0], 20, 20)
-        face2_colors = generate_face_colors(areas[1], 20, 20)
-        face3_colors = generate_face_colors(areas[2], 20, 20)
-        face4_colors = generate_face_colors(areas[3], 20, 20)
+        # Generate or retrieve color patterns for each face
+        face1_colors = self.generate_face_colors(areas[0], 20, 20)
+        face2_colors = self.generate_face_colors(areas[1], 20, 20)
+        face3_colors = self.generate_face_colors(areas[2], 20, 20)
+        face4_colors = self.generate_face_colors(areas[3], 20, 20)
 
         # Return the color arrays in the response
         response_data = {
@@ -341,3 +321,30 @@ class FaceColorView(APIView):
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+    def generate_face_colors(self, face_area, num_rows, num_cols):
+        # Check if a pattern exists for these dimensions
+        key = f"{face_area}_{num_rows}_{num_cols}"
+        if key in self.color_patterns:
+            return self.color_patterns[key]
+
+        # Generate a new color pattern
+        colors = []
+        for row in range(num_rows):
+            row_colors = []
+            for col in range(num_cols):
+                # Introduce a small random variation to the intensity
+                intensity = 1 - (row / (num_rows - 6)) + random.uniform(-0.1, 0.1)
+                intensity = max(0, min(1, intensity))  # Clamp intensity to 0-1 range
+
+                # Calculate RGB values based on intensity
+                red = int(255 * intensity)
+                green = int(255 * (1 - intensity))
+                blue = 0  # Keep blue constant for a red-to-yellow gradient
+
+                row_colors.append((red, green, blue))
+            colors.append(row_colors)
+
+        # Store the generated pattern in the map
+        self.color_patterns[key] = colors
+        return colors
