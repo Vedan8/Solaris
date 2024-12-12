@@ -27,5 +27,7 @@ dhi_series = pvlib.irradiance.erbs(ghi_series, solar_position['zenith'], times)[
 # Calculate DNI
 dni_series = (ghi_series - dhi_series) / np.cos(np.radians(solar_position['zenith']))
 
-print(f"DHI: {dhi_series.values[0]} W/m^2")
-print(f"DNI: {dni_series.values[0]} W/m^2")
+return (
+    dhi_series.values[0],
+    dni_series.values[0]
+)

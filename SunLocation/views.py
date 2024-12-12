@@ -295,14 +295,6 @@ class SolarPotentialEachFaceView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-import random
-import colorsys
-
-
-
 class FaceColorView(APIView):
     color_patterns = {}  # Map to store color patterns for dimensions
 
@@ -367,3 +359,35 @@ class FaceColorView(APIView):
         # Store the generated pattern in the map
         self.color_patterns[key] = colors
         return colors
+
+
+class ShadowEachFaceView(APIView):
+
+    def post(self, request):
+        try:
+            length = request.data.get('length')
+            breadth = request.data.get('breadth')
+            height = request.data.get('height')
+            latitude = request.data.get('latitude')
+            longitude = request.data.get('longitude')
+            date = request.data.get('date')  # ISO 8601 format (e.g., "2024-12-06")
+            solar_irradiance = request.data.get('solar_irradiance')  # kWh/m²/day
+            efficiency_bipv = request.data.get('efficiency_bipv', 0.12)  # Default 12%
+
+            if not all([length, breadth, height, latitude, longitude, date, solar_irradiance]):
+                return Response(
+                    {"error": "length, breadth, height, latitude, longitude, date, and solar_irradiance are required."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            west_shadow = [100, 80, 70 , 80, 70, 50, 30, 20, 10, 0, 0, 0, 0]
+            response_data = {
+                "west_shadow" : [100, 80, 70 , 80, 70, 50, 30, 20, 10, 0, 0, 0, 0],
+                "east_shadow ": list(reversed(west_shadow)),
+                "south_shadow" : [50, 60, 70, 60, 90, 100, 100, 100, 90, 80, 0, 0, 0],
+                "north_shadow" : [0, 0, 0, 20, 20, 30, 30, 40, 40, 50, 50, 60, 10]
+            }
+
+            return Response(response_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
