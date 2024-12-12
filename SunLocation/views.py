@@ -199,35 +199,35 @@ class SolarPotentialEachFaceView(APIView):
         hourly_potential = {"face1": [], "face2": [], "face3": [], "face4": []}
 
         # Manually defined exposure percentages for each face
-        # east_exposure = [1, 1, 1, 0.8, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
-        # west_exposure = list(reversed(east_exposure))
-        # south_exposure = [0, 0, 0, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
-        # north_exposure = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0, 0, 0]
+        east_exposure = [1, 1, 1, 0.8, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
+        west_exposure = list(reversed(east_exposure))
+        south_exposure = [0, 0, 0, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
+        north_exposure = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0, 0, 0]
 
-        # exposures = [east_exposure, south_exposure, west_exposure, north_exposure]
+        exposures = [east_exposure, south_exposure, west_exposure, north_exposure]
 
-        east_exposure_1 = [1, 1, 0.9, 0.8, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
-        west_exposure_1 = list(reversed(east_exposure))
-        south_exposure_1 = [0, 0, 0, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
-        north_exposure_1 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0, 0, 0]
+        # east_exposure_1 = [1, 1, 0.9, 0.8, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
+        # west_exposure_1 = list(reversed(east_exposure))
+        # south_exposure_1 = [0, 0, 0, 0.8, 0.9, 1, 1, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
+        # north_exposure_1 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.5, 0.4, 0.3, 0.2, 0, 0, 0]
 
-        east_exposure_2 = [1, 0.9, 0.8, 0.8, 0.7, 0.5, 0.2, 0.3, 0.2, 0.1, 0, 0, 0, 0]
-        west_exposure_2 = list(reversed(east_exposure))
-        south_exposure_2 = [0, 0, 0, 0.6, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.7, 0.6, 0.5]
-        north_exposure_2 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.3, 0.4, 0.6, 0.2, 0, 0, 0]
+        # east_exposure_2 = [1, 0.9, 0.8, 0.8, 0.7, 0.5, 0.2, 0.3, 0.2, 0.1, 0, 0, 0, 0]
+        # west_exposure_2 = list(reversed(east_exposure))
+        # south_exposure_2 = [0, 0, 0, 0.6, 0.7, 0.7, 0.6, 0.6, 0.5, 0.5, 0.7, 0.6, 0.5]
+        # north_exposure_2 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.3, 0.4, 0.6, 0.2, 0, 0, 0]
 
-        east_exposure_3 = [1, 1, 0.8, 0.5, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
-        west_exposure_3 = list(reversed(east_exposure))
-        south_exposure_3 = [0, 0, 0, 0.8, 0.9, 1, 0.8, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
-        north_exposure_3 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.3, 0.2, 0.4, 0.3, 0.2, 0, 0, 0]
-        random_set_index = random.randint(0, 2)
-        exposures=[]
-        if random_set_index == 0:
-            exposures = [east_exposure_1, south_exposure_1, west_exposure_1, north_exposure_1]
-        elif random_set_index == 1:
-            exposures = [east_exposure_2, south_exposure_2, west_exposure_2, north_exposure_2]
-        else:
-            exposures = [east_exposure_3, south_exposure_3, west_exposure_3, north_exposure_3]
+        # east_exposure_3 = [1, 1, 0.8, 0.5, 0.7, 0.5, 0.3, 0.2, 0.1, 0, 0, 0, 0]
+        # west_exposure_3 = list(reversed(east_exposure))
+        # south_exposure_3 = [0, 0, 0, 0.8, 0.9, 1, 0.8, 1, 0.9, 0.8, 0.7, 0.6, 0.5]
+        # north_exposure_3 = [0.1, 0.2, 0.3, 0.4, 0.5, 0.3, 0.2, 0.4, 0.3, 0.2, 0, 0, 0]
+        # random_set_index = random.randint(0, 2)
+        # exposures=[]
+        # if random_set_index == 0:
+        #     exposures = [east_exposure_1, south_exposure_1, west_exposure_1, north_exposure_1]
+        # elif random_set_index == 1:
+        #     exposures = [east_exposure_2, south_exposure_2, west_exposure_2, north_exposure_2]
+        # else:
+        #     exposures = [east_exposure_3, south_exposure_3, west_exposure_3, north_exposure_3]
 
         for hour in range(6, 19):  # 6 AM to 6 PM
             hour_index = hour - 6
