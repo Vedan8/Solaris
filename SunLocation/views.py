@@ -301,6 +301,12 @@ from rest_framework import status
 import random
 import colorsys
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+import random
+import colorsys
+
 class FaceColorView(APIView):
     color_patterns = {}  # Map to store color patterns for dimensions
 
@@ -330,9 +336,9 @@ class FaceColorView(APIView):
         return Response(response_data, status=status.HTTP_200_OK)
 
     def generate_face_colors(self, face_area, num_rows, num_cols):
+        num_rows=20
+        num_cols=20
         # Check if a pattern exists for these dimensions
-        num_rows = 20
-        num_cols = 20
         key = f"{face_area}_{num_rows}_{num_cols}"
         if key in self.color_patterns:
             return self.color_patterns[key]
@@ -342,20 +348,17 @@ class FaceColorView(APIView):
         for row in range(num_rows):
             row_colors = []
             for col in range(num_cols):
-                # Introduce a small random variation to the intensity
-                intensity = 1 - (row / (num_rows - 6)) + random.uniform(-0.1, 0.1)
-                intensity = max(0, min(1, intensity))  # Clamp intensity to 0-1 range
+                # Adjust hue for the first 6 rows to be pure red
+                hue = 0 if row < 6 else 0.08 + (row - 6) * 0.09 / (num_rows - 6)
 
-                # Calculate RGB values based on intensity
-                red = int(255 * intensity)
-                green = int(255 * (1 - intensity))
-                blue = 0  # Keep blue constant for a red-to-yellow gradient
+                # Calculate RGB values based on hue and intensity
+                red, green, blue = colorsys.hsv_to_rgb(hue, 1, 1)  # Full saturation and value for brighter colors
+                red = int(255 * red)
+                green = int(255 * green)
+                blue = int(255 * blue)
 
-                # Convert RGB to HSV (intermediate step)
-                hsv_color = colorsys.rgb_to_hsv(red/255, green/255, blue/255)
-
-                # Convert HSV to hex
-                hex_color = '#{:02x}{:02x}{:02x}'.format(int(hsv_color[0] * 255), int(hsv_color[1] * 255), int(hsv_color[2] * 255))
+                # Convert RGB to hex
+                hex_color = '#{:02x}{:02x}{:02x}'.format(red, green, blue)
 
                 row_colors.append(hex_color)
             colors.append(row_colors)
