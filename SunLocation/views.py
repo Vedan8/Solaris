@@ -291,3 +291,53 @@ class SolarPotentialEachFaceView(APIView):
             return Response(response_data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class FaceColorView(APIView):
+    def post(self, request):
+        # Retrieve data from the request, even if not all is needed
+        length = float(request.data.get('length')) if request.data.get('length') else None
+        breadth = float(request.data.get('breadth')) if request.data.get('breadth') else None
+        height = float(request.data.get('height')) if request.data.get('height') else None
+        latitude = request.data.get('latitude')
+        longitude = request.data.get('longitude')
+        date = request.data.get('date')
+        solar_irradiance = request.data.get('solar_irradiance')
+        efficiency_bipv = request.data.get('efficiency_bipv', 0.12)
+
+        # Calculate face areas
+        areas = [height * length, height * breadth, height * length, height * breadth]
+
+        def generate_face_colors(face_area, num_rows, num_cols):
+            colors = []
+            for row in range(num_rows):
+                row_colors = []
+                for col in range(num_cols):
+                    # Calculate color intensity based on row number
+                    intensity = 1 - (row / (num_rows - 6))
+
+                    # Calculate RGB values based on intensity
+                    red = int(255 * intensity)
+                    green = int(255 * (1 - intensity))
+                    blue = 0  # Keep blue constant for a red-to-yellow gradient
+
+                    row_colors.append((red, green, blue))
+                colors.append(row_colors)
+            return colors
+
+        # Divide faces into grids and generate color arrays
+        face1_colors = generate_face_colors(areas[0], 20, 20)
+        face2_colors = generate_face_colors(areas[1], 20, 20)
+        face3_colors = generate_face_colors(areas[2], 20, 20)
+        face4_colors = generate_face_colors(areas[3], 20, 20)
+
+        # Return the color arrays in the response
+        response_data = {
+            "face1_colors": face1_colors,
+            "face2_colors": face2_colors,
+            "face3_colors": face3_colors,
+            "face4_colors": face4_colors
+        }
+
+        return Response(response_data, status=status.HTTP_200_OK)
